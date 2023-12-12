@@ -1,0 +1,26 @@
+{
+  "name": "mmm-icloud-client",
+  "version": "2.0.0",
+  "description": "A CardDAV Client module for MagicMirror².",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bitte-ein-bit/MMM-iCloud-Client"
+  },
+  "keywords": [
+    "magic mirror",
+    "iCloud",
+    "module"
+  ],
+  "author": "Jonathan Vogt",
+  "contributors": ["https://github.com/bitte-ein-bit/MMM-iCloud-Client/graphs/contributors"],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bitte-ein-bit/MMM-iCloud-Client/issues"
+  },
+  "homepage": "https://github.com/bitte-ein-bit/MMM-iCloud-Client#readme",
+  "dependencies": {
+    "ical-generator": "^0.2.7",
+    "icloud": "latest",
+    "nedb": "^1.8.0"
+  }
+}
