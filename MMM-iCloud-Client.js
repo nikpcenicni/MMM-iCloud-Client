@@ -11,7 +11,7 @@ Module.register("MMM-iCloud-Client", {
 	// Default module config.
 	defaults: {
 		username: "",
-		password: "",
+		appPassword: "",
 		countrycode: "49",
 	},
 
