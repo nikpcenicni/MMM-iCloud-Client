@@ -20,7 +20,11 @@
   "homepage": "https://github.com/bitte-ein-bit/MMM-iCloud-Client#readme",
   "dependencies": {
     "ical-generator": "^0.2.7",
-    "icloud": "latest",
-    "nedb": "^1.8.0"
+    "nedb": "^1.8.0",
+    "tsdav": "^2.5.0",
+    "vcard-parser": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

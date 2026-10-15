@@ -6,11 +6,46 @@
  */
 "use strict";
 const NodeHelper = require("node_helper");
-const icloud = require("icloud");
+const { createDAVClient } = require("tsdav");
+const vCard = require("vcard-parser");
 const ical = require("ical-generator");
 const Datastore = require("nedb");
 
-var instance = icloud();
+function firstVCardValue(card, field) {
+	const entry = card[field] && card[field][0];
+	return entry ? entry.value : undefined;
+}
+
+function contactFromVCard(vcard) {
+	const card = vCard.parse(vcard.data);
+	const name = firstVCardValue(card, "n");
+	const birthdayValue = firstVCardValue(card, "bday");
+	const phones = (card.tel || []).map(function (phone) {
+		return {
+			field: Array.isArray(phone.value) ? phone.value.join("") : phone.value,
+			label: phone.meta && phone.meta.type ? phone.meta.type.join(", ") : "",
+		};
+	});
+	const contact = {
+		contactId: firstVCardValue(card, "uid") || vcard.url,
+		firstName: name && name[1],
+		middleName: name && name[2],
+		lastName: name && name[0],
+		nickName: firstVCardValue(card, "nickname"),
+		phones: phones,
+	};
+
+	if (birthdayValue !== undefined) {
+		const birthday = Array.isArray(birthdayValue)
+			? birthdayValue.join("")
+			: String(birthdayValue);
+		contact.birthday = /^\d{8}$/.test(birthday)
+			? `${birthday.slice(0, 4)}-${birthday.slice(4, 6)}-${birthday.slice(6, 8)}`
+			: birthday;
+	}
+
+	return contact;
+}
 
 var phonenumberDB = new Datastore({ timestampData: true });
 phonenumberDB.ensureIndex(
@@ -169,8 +204,15 @@ module.exports = NodeHelper.create({
 			});
 	},
 
-	loadiCloud: function () {
-		console.log("syncing iCloud");
+	loadiCloud: async function () {
+		if (!this.config.username || !this.config.appPassword) {
+			console.error(
+				"iCloud sync requires both username and appPassword in the module config.",
+			);
+			return;
+		}
+
+		console.log("syncing iCloud contacts via CardDAV");
 		contactDB.find(
 			{ phones: { $exists: true } },
 			function (err, docs) {
@@ -181,36 +223,53 @@ module.exports = NodeHelper.create({
 				);
 			}.bind(this),
 		);
-		instance.login(
-			this.config.username,
-			this.config.password,
-			function (err) {
-				if (err) return console.log("login failed");
-				instance.contacts(
-					function (err, results) {
-						if (err) return console.log("failed to fetch contacts");
-						results.contacts.forEach(
-							function (contact) {
-								contactDB.update({ contactId: contact.contactId }, contact, {
-									upsert: true,
-								});
-								if (contact.birthday !== undefined) {
-									this.extractBirthday(contact);
-								}
-								if (contact.phones !== undefined) {
-									this.extractPhoneNumber(contact);
-								}
-							}.bind(this),
-						);
-						contactDB.persistence.compactDatafile();
-						contactDB.count({}),
-							function (err, count) {
-								console.log(`Loaded ${count} Contacts`);
-							};
-					}.bind(this),
-				);
-			}.bind(this),
-		);
+		try {
+			const client = await createDAVClient({
+				serverUrl: "https://contacts.icloud.com",
+				credentials: {
+					username: this.config.username,
+					password: this.config.appPassword,
+				},
+				authMethod: "Basic",
+				defaultAccountType: "carddav",
+			});
+			const addressBooks = await client.fetchAddressBooks();
+			const vCardsByAddressBook = await Promise.all(
+				addressBooks.map(function (addressBook) {
+					return client.fetchVCards({ addressBook: addressBook });
+				}),
+			);
+			const contacts = vCardsByAddressBook
+				.flat()
+				.filter(function (vcard) {
+					return typeof vcard.data === "string";
+				})
+				.map(contactFromVCard);
+
+			for (const contact of contacts) {
+				await new Promise(function (resolve, reject) {
+					contactDB.update(
+						{ contactId: contact.contactId },
+						contact,
+						{ upsert: true },
+						function (err) {
+							if (err) return reject(err);
+							if (contact.birthday) this.extractBirthday(contact);
+							if (contact.phones.length) this.extractPhoneNumber(contact);
+							resolve();
+						}.bind(this),
+					);
+				}.bind(this));
+			}
+
+			contactDB.persistence.compactDatafile();
+			contactDB.count({}, function (err, count) {
+				if (err) return console.error("Failed to count synced contacts:", err);
+				console.log(`Loaded ${count} Contacts`);
+			});
+		} catch (err) {
+			console.error("iCloud CardDAV contact sync failed:", err.message || err);
+		}
 	},
 
 	sanatizePhoneNumber: function (number) {
