@@ -23,7 +23,6 @@ Create an app-specific password from your Apple Account's **Sign-In and Security
  config: {
   username: "appleID",
   appPassword: "xxxx-xxxx-xxxx-xxxx",
-  countrycode: "49",
  }
 },
 ```
@@ -40,6 +39,23 @@ To use the birthday calendar add the following to your calendar module config.
 The module serves this birthday calendar feed locally at `/MMM-iCloud-Client/birthdays`. If your calendar client runs on another device, replace `localhost:8080` with the MagicMirror host and port. The app-specific password is only used by the module to read iCloud Contacts; do not put it in the calendar URL.
 
 This module requires Node.js 18 or newer.
+
+Phone numbers are normalized by removing punctuation and converting a leading `00` to `+`. No country prefix is added, so local-number formats in the contact and caller data must match.
+
+## Install as an MMPM custom package
+
+Register this GitHub repository with MMPM, then install the registered package:
+
+```sh
+mmpm custom-pkg add \
+    -t "MMM-iCloud-Client" \
+    -a "Jonathan Vogt" \
+    -r "https://github.com/bitte-ein-bit/MMM-iCloud-Client" \
+    -d "iCloud contacts, phone lookup, and birthday calendar for MagicMirror"
+mmpm add MMM-iCloud-Client
+```
+
+The custom-package entry is stored in your local MMPM database. It does not publish the module to a shared MMPM catalog.
 
 ## Dependencies
 
