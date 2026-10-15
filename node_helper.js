@@ -275,8 +275,7 @@ module.exports = NodeHelper.create({
 	sanatizePhoneNumber: function (number) {
 		return number
 			.replace(/[^+0-9]+/gi, "")
-			.replace(/^00/, "+")
-			.replace(/^0/, `+${this.config.countrycode}`);
+			.replace(/^00/, "+");
 	},
 
 	socketNotificationReceived: function (notification, payload) {

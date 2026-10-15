@@ -4,7 +4,7 @@
   "description": "A CardDAV Client module for MagicMirror².",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bitte-ein-bit/MMM-iCloud-Client"
+    "url": "https://github.com/bitte-ein-bit/MMM-iCloud-Client.git"
   },
   "keywords": [
     "magic mirror",
