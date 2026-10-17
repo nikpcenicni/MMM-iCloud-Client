@@ -12,15 +12,17 @@
     "module"
   ],
   "author": "Jonathan Vogt",
-  "contributors": ["https://github.com/bitte-ein-bit/MMM-iCloud-Client/graphs/contributors"],
+  "contributors": [
+    "https://github.com/bitte-ein-bit/MMM-iCloud-Client/graphs/contributors"
+  ],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/bitte-ein-bit/MMM-iCloud-Client/issues"
   },
   "homepage": "https://github.com/bitte-ein-bit/MMM-iCloud-Client#readme",
   "dependencies": {
+    "@seald-io/nedb": "^4.1.2",
     "ical-generator": "^0.2.7",
-    "nedb": "^1.8.0",
     "tsdav": "^2.5.0",
     "vcard-parser": "^1.0.0"
   },

@@ -9,7 +9,7 @@ const NodeHelper = require("node_helper");
 const { createDAVClient } = require("tsdav");
 const vCard = require("vcard-parser");
 const ical = require("ical-generator");
-const Datastore = require("nedb");
+const Datastore = require("@seald-io/nedb");
 
 function firstVCardValue(card, field) {
 	const entry = card[field] && card[field][0];
@@ -160,6 +160,7 @@ module.exports = NodeHelper.create({
 					firstName: contact.firstName,
 					middleName: contact.middleName,
 					lastName: contact.lastName,
+					nickName: contact.nickName,
 				};
 				phonenumberDB.update({ unique: sanenumber }, info, { upsert: true });
 			}.bind(this),
