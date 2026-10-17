@@ -2,7 +2,7 @@
 
 A [MagicMirror²](https://github.com/MagicMirrorOrg/MagicMirror) module that signs in to iCloud with your Apple ID and an app-specific password, reads your iCloud Contacts and serves their birthdays as an iCalendar (`.ics`) feed for the default `calendar` module.
 
-The module has no on-screen output. It syncs contacts in the background and serves the feed at `/MMM-iCloud-Client/birthdays`.
+The module has no on-screen output. It syncs contacts in the background and serves the feed at `/MMM-iCloud-Client/birthdays.ics`. The first sync starts as soon as MagicMirror starts.
 
 ## Installation
 
@@ -46,27 +46,33 @@ Requires Node.js 18 or newer.
     calendars: [
       {
         symbol: "birthday-cake",
-        url: "http://localhost:8080/MMM-iCloud-Client/birthdays",
+        url: "http://localhost:8080/MMM-iCloud-Client/birthdays.ics",
       },
     ],
   },
 },
 ```
 
-If MagicMirror runs on a different port, change `8080` to match. Any other calendar app on your network can subscribe to the same URL with the MagicMirror host's address. The app-specific password never appears in the feed or its URL.
+If MagicMirror runs on a different port, change `8080` to match. The app-specific password never appears in the feed or its URL. The older `/MMM-iCloud-Client/birthdays` path still works.
+
+To open the feed from another device (a browser or calendar app on your network), MagicMirror must accept connections from it: set `address: "0.0.0.0"` and add the device to `ipWhitelist` (or set `ipWhitelist: []`) in `config.js`. With the defaults, only the mirror itself can load the URL.
 
 ## The calendar feed
 
 - One all-day event per contact for this year and next year, so the next 12 months are always covered.
 - When the birth year is known, the event title includes the age the person turns, for example `Jane Doe (37)`. Birthdays saved without a year show just the name.
 - Birthdays on 29 February fall on 28 February in non-leap years.
-- If a sync fails, the module keeps serving the last successful result and logs the error. After a restart, the first request waits up to 30 seconds for the initial sync.
+- If a sync fails, the module keeps serving the last successful result and logs the error.
+- Until the first sync finishes, the URL responds with `503 Service Unavailable`. The calendar module retries automatically after about 15 seconds, so birthdays appear shortly after startup.
 
 ## Troubleshooting
 
 Check the MagicMirror log (for example `pm2 logs MagicMirror`):
 
-- `synced N birthdays from M address book(s)`: everything works.
+- `synced N birthdays from M address book(s) in Ns`: everything works.
+- `Cannot GET /MMM-iCloud-Client/birthdays.ics`: the module's helper did not load. Run `npm install` in the module folder and restart MagicMirror.
+- `This device is not allowed to access your mirror`, or the connection is refused: you are opening the URL from another device. See the `address` and `ipWhitelist` note above.
+- `iCloud contacts not synced yet`: no sync has succeeded. Look for an error line in the log.
 - `iCloud sync failed: Invalid credentials … 401`: the Apple ID or app-specific password is wrong.
 - `set both username and appPassword`: one of the options is missing from `config.js`.
 
