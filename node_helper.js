@@ -20,6 +20,7 @@ module.exports = NodeHelper.create({
 		// null until the first sync succeeds, so the feed can tell "not ready" from "no birthdays".
 		this.contacts = null;
 		this.syncing = false;
+		this.lastError = null;
 		this.expressApp.get(
 			[`/${this.name}/birthdays.ics`, `/${this.name}/birthdays`],
 			(_req, res) => this.serveCalendar(res),
@@ -29,7 +30,11 @@ module.exports = NodeHelper.create({
 		// first sync starts at boot instead of waiting for a browser to connect.
 		if (typeof this.getServerModuleConfig === "function") {
 			const serverConfig = this.getServerModuleConfig();
-			if (serverConfig.username || serverConfig.appPassword) this.configure(serverConfig);
+			if (serverConfig.username || serverConfig.appPassword) {
+				this.configure(serverConfig);
+			} else {
+				console.log(`${this.name}: no credentials in server config yet, waiting for the browser to send them`);
+			}
 		}
 	},
 
@@ -44,9 +49,11 @@ module.exports = NodeHelper.create({
 	configure: function (config) {
 		this.config = config;
 		if (!config.username || !config.appPassword) {
-			console.error(`${this.name}: set both username and appPassword in config.js.`);
+			this.lastError = "username or appPassword is missing from the MMM-iCloud-Client config";
+			console.error(`${this.name}: ${this.lastError}`);
 			return;
 		}
+		console.log(`${this.name}: syncing iCloud contacts for ${config.username}`);
 
 		this.sync();
 		this.timer = setInterval(
@@ -82,12 +89,14 @@ module.exports = NodeHelper.create({
 			}
 
 			this.contacts = [...contactsById.values()];
+			this.lastError = null;
 			console.log(
 				`${this.name}: synced ${this.contacts.length} birthdays from ${addressBooks.length} address book(s) in ${Math.round((Date.now() - startedAt) / 1000)}s`,
 			);
 		} catch (err) {
 			// Keep serving the last successful sync.
-			console.error(`${this.name}: iCloud sync failed: ${err.message || err}`);
+			this.lastError = `iCloud sync failed: ${err.message || err}`;
+			console.error(`${this.name}: ${this.lastError}`);
 		} finally {
 			this.syncing = false;
 		}
@@ -96,9 +105,9 @@ module.exports = NodeHelper.create({
 	serveCalendar: function (res) {
 		if (this.contacts === null) {
 			// The calendar module retries 5xx responses with a short backoff (15s, 30s, 60s ...).
-			const reason = this.syncing
-				? "iCloud contact sync in progress"
-				: "iCloud contacts not synced yet, check the MagicMirror log";
+			let reason = "Waiting for credentials: add username and appPassword to the MMM-iCloud-Client config";
+			if (this.syncing) reason = "iCloud contact sync in progress";
+			else if (this.lastError) reason = this.lastError;
 			res.set("Retry-After", "15");
 			res.status(503).type("text/plain").send(reason);
 			return;
