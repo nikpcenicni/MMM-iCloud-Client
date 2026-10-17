@@ -62,4 +62,4 @@ The custom-package entry is stored in your local MMPM database. It does not publ
 - [ical-generator](https://www.npmjs.com/package/ical-generator) (installed by `npm install`)
 - [tsdav](https://www.npmjs.com/package/tsdav) (installed by `npm install`)
 - [vcard-parser](https://www.npmjs.com/package/vcard-parser) (installed by `npm install`)
-- [nedb](https://www.npmjs.com/package/nedb) (installed by `npm install`)
+- [@seald-io/nedb](https://www.npmjs.com/package/@seald-io/nedb) (installed by `npm install`)
