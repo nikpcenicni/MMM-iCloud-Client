@@ -1,65 +1,82 @@
 # MMM-iCloud-Client
 
-This an extension for the [MagicMirror²](https://github.com/MichMich/MagicMirror). It provides a iCloud client which will show upcomming birthdays using the iCloud addressbook.
+A [MagicMirror²](https://github.com/MagicMirrorOrg/MagicMirror) module that signs in to iCloud with your Apple ID and an app-specific password, reads your iCloud Contacts and serves their birthdays as an iCalendar (`.ics`) feed for the default `calendar` module.
 
-Future versions will also provides an addressbook for [MMM-FRITZ-Box-Callmonitor](https://github.com/paviro/MMM-FRITZ-Box-Callmonitor).
+The module has no on-screen output. It syncs contacts in the background and serves the feed at `/MMM-iCloud-Client/birthdays`.
 
 ## Installation
 
-1. Navigate into your MagicMirror's `modules` folder.
-2. Clone repository with `git clone https://github.com/bitte-ein-bit/MMM-iCloud-Client`.
-3. Navigate into MMM-iCloud-Client.
-4. Execute `npm install` to install the dependencies.
+```sh
+cd ~/MagicMirror/modules
+git clone https://github.com/bitte-ein-bit/MMM-iCloud-Client
+cd MMM-iCloud-Client
+npm install
+```
 
-## Usage
+Requires Node.js 18 or newer.
 
-The entry in the `module array` in your `config.js` can look like the following.
+## Configuration
 
-Create an app-specific password from your Apple Account's **Sign-In and Security → App-Specific Passwords** page. Use that password here, not your regular Apple Account password.
+1. Create an app-specific password at [account.apple.com](https://account.apple.com) under **Sign-In and Security → App-Specific Passwords**. Your regular Apple Account password will not work.
+2. Add the module to `config/config.js`:
 
 ```js
 {
- module: 'MMM-iCloud-Client',
- config: {
-  username: "appleID",
-  appPassword: "xxxx-xxxx-xxxx-xxxx",
- }
+  module: "MMM-iCloud-Client",
+  config: {
+    username: "you@icloud.com",       // your Apple ID email
+    appPassword: "xxxx-xxxx-xxxx-xxxx",
+  },
 },
 ```
 
-To use the birthday calendar add the following to your calendar module config.
+| Option           | Default             | Description                                       |
+| ---------------- | ------------------- | ------------------------------------------------- |
+| `username`       | `""`                | Apple ID email address.                           |
+| `appPassword`    | `""`                | App-specific password.                            |
+| `updateInterval` | `3600000` (1 hour)  | How often to re-sync contacts, in milliseconds. Minimum 5 minutes. |
+
+3. Add the feed to the `calendar` module:
 
 ```js
 {
- symbol: 'birthday-cake',
- url: 'http://localhost:8080/MMM-iCloud-Client/birthdays',
-}
+  module: "calendar",
+  position: "top_left",
+  config: {
+    calendars: [
+      {
+        symbol: "birthday-cake",
+        url: "http://localhost:8080/MMM-iCloud-Client/birthdays",
+      },
+    ],
+  },
+},
 ```
 
-The module serves this birthday calendar feed locally at `/MMM-iCloud-Client/birthdays`. If your calendar client runs on another device, replace `localhost:8080` with the MagicMirror host and port. The app-specific password is only used by the module to read iCloud Contacts; do not put it in the calendar URL.
+If MagicMirror runs on a different port, change `8080` to match. Any other calendar app on your network can subscribe to the same URL with the MagicMirror host's address. The app-specific password never appears in the feed or its URL.
 
-This module requires Node.js 18 or newer.
+## The calendar feed
 
-Phone numbers are normalized by removing punctuation and converting a leading `00` to `+`. No country prefix is added, so local-number formats in the contact and caller data must match.
+- One all-day event per contact for this year and next year, so the next 12 months are always covered.
+- When the birth year is known, the event title includes the age the person turns, for example `Jane Doe (37)`. Birthdays saved without a year show just the name.
+- Birthdays on 29 February fall on 28 February in non-leap years.
+- If a sync fails, the module keeps serving the last successful result and logs the error. After a restart, the first request waits up to 30 seconds for the initial sync.
 
-## Install as an MMPM custom package
+## Troubleshooting
 
-Register this GitHub repository with MMPM, then install the registered package:
+Check the MagicMirror log (for example `pm2 logs MagicMirror`):
+
+- `synced N birthdays from M address book(s)`: everything works.
+- `iCloud sync failed: Invalid credentials … 401`: the Apple ID or app-specific password is wrong.
+- `set both username and appPassword`: one of the options is missing from `config.js`.
+
+## Development
 
 ```sh
-mmpm custom-pkg add \
-    -t "MMM-iCloud-Client" \
-    -a "Jonathan Vogt" \
-    -r "https://github.com/bitte-ein-bit/MMM-iCloud-Client" \
-    -d "iCloud contacts, phone lookup, and birthday calendar for MagicMirror"
-mmpm add MMM-iCloud-Client
+npm test
 ```
-
-The custom-package entry is stored in your local MMPM database. It does not publish the module to a shared MMPM catalog.
 
 ## Dependencies
 
-- [ical-generator](https://www.npmjs.com/package/ical-generator) (installed by `npm install`)
-- [tsdav](https://www.npmjs.com/package/tsdav) (installed by `npm install`)
-- [vcard-parser](https://www.npmjs.com/package/vcard-parser) (installed by `npm install`)
-- [@seald-io/nedb](https://www.npmjs.com/package/@seald-io/nedb) (installed by `npm install`)
+- [tsdav](https://www.npmjs.com/package/tsdav): CardDAV client
+- [vcard-parser](https://www.npmjs.com/package/vcard-parser): vCard parsing

@@ -1,15 +1,18 @@
 {
   "name": "mmm-icloud-client",
-  "version": "2.0.0",
-  "description": "A CardDAV Client module for MagicMirror².",
+  "version": "3.0.0",
+  "description": "Birthday calendar from iCloud Contacts for MagicMirror².",
   "repository": {
     "type": "git",
     "url": "https://github.com/bitte-ein-bit/MMM-iCloud-Client.git"
   },
   "keywords": [
     "magic mirror",
+    "magicmirror",
     "iCloud",
-    "module"
+    "contacts",
+    "birthdays",
+    "calendar"
   ],
   "author": "Jonathan Vogt",
   "contributors": [
@@ -20,9 +23,10 @@
     "url": "https://github.com/bitte-ein-bit/MMM-iCloud-Client/issues"
   },
   "homepage": "https://github.com/bitte-ein-bit/MMM-iCloud-Client#readme",
+  "scripts": {
+    "test": "node --test"
+  },
   "dependencies": {
-    "@seald-io/nedb": "^4.1.2",
-    "ical-generator": "^0.2.7",
     "tsdav": "^2.5.0",
     "vcard-parser": "^1.0.0"
   },
