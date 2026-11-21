@@ -1,10 +1,10 @@
 {
   "name": "mmm-icloud-client",
-  "version": "3.0.0",
-  "description": "Birthday calendar from iCloud Contacts for MagicMirror².",
+  "version": "3.1.0",
+  "description": "Birthdays, anniversaries and private calendars from iCloud for MagicMirror².",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bitte-ein-bit/MMM-iCloud-Client.git"
+    "url": "https://github.com/nikpcenicni/MMM-iCloud-Client.git"
   },
   "keywords": [
     "magic mirror",
@@ -12,17 +12,20 @@
     "iCloud",
     "contacts",
     "birthdays",
-    "calendar"
+    "anniversaries",
+    "calendar",
+    "caldav",
+    "carddav"
   ],
-  "author": "Jonathan Vogt",
+  "author": "Nikholas Pcenicni",
   "contributors": [
-    "https://github.com/bitte-ein-bit/MMM-iCloud-Client/graphs/contributors"
+    "https://github.com/nikpcenicni/MMM-iCloud-Client/graphs/contributors"
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/bitte-ein-bit/MMM-iCloud-Client/issues"
+    "url": "https://github.com/nikpcenicni/MMM-iCloud-Client/issues"
   },
-  "homepage": "https://github.com/bitte-ein-bit/MMM-iCloud-Client#readme",
+  "homepage": "https://github.com/nikpcenicni/MMM-iCloud-Client#readme",
   "scripts": {
     "test": "node --test"
   },
