@@ -3,7 +3,7 @@
 /* MagicMirror²
  * Module: MMM-iCloud-Client
  *
- * By Jonathan Vogt https://github.com/bitte-ein-bit
+ * By Nikholas Pcenicni https://github.com/nikpcenicni/MMM-iCloud-Client
  * MIT Licensed.
  */
 
@@ -12,6 +12,8 @@ Module.register("MMM-iCloud-Client", {
 		username: "",
 		appPassword: "",
 		updateInterval: 60 * 60 * 1000,
+		groups: [],
+		calendars: [],
 	},
 
 	start: function () {
