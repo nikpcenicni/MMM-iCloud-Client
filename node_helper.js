@@ -37,12 +37,17 @@ module.exports = NodeHelper.create({
 		this.config = null;
 		// null until the first sync succeeds, so the feeds can tell "not ready" from "empty".
 		this.contacts = null;
-		// slug -> { name, ics }; null until the first calendar sync succeeds.
+		// Map of slug -> { name, ics }; null until the first calendar sync succeeds.
 		this.calendars = null;
 		this.syncing = false;
 		this.contactsError = null;
 		this.calendarsError = null;
 
+		// Feeds are plain text or iCalendar; stop browsers from guessing another type.
+		this.expressApp.use(`/${this.name}`, (_req, res, next) => {
+			res.set("X-Content-Type-Options", "nosniff");
+			next();
+		});
 		this.expressApp.get([`/${this.name}/birthdays.ics`, `/${this.name}/birthdays`], (_req, res) =>
 			this.serveContactFeed(res, buildBirthdayCalendar),
 		);
@@ -180,22 +185,22 @@ module.exports = NodeHelper.create({
 				start: new Date(now - CALENDAR_DAYS_BEHIND * DAY).toISOString(),
 				end: new Date(now + CALENDAR_DAYS_AHEAD * DAY).toISOString(),
 			};
-			const calendars = {};
+			const calendars = new Map();
 			let events = 0;
 			for (const calendar of selected) {
 				const name = calendarName(calendar);
 				let slug = slugify(name);
-				for (let n = 2; calendars[slug]; n++) slug = `${slugify(name)}-${n}`;
+				for (let n = 2; calendars.has(slug); n++) slug = `${slugify(name)}-${n}`;
 
 				const objects = await client.fetchCalendarObjects({ calendar, timeRange });
 				const data = objects.map((object) => object.data).filter((text) => typeof text === "string");
 				events += data.length;
-				calendars[slug] = { name, ics: mergeCalendarObjects(data, name) };
+				calendars.set(slug, { name, ics: mergeCalendarObjects(data, name) });
 			}
 
 			this.calendars = calendars;
 			this.calendarsError = null;
-			const urls = Object.keys(calendars).map((slug) => `/${this.name}/calendars/${slug}.ics`);
+			const urls = [...calendars.keys()].map((slug) => `/${this.name}/calendars/${slug}.ics`);
 			console.log(
 				`${this.name}: synced ${events} calendar object(s) from ${selected.length} calendar(s) in ${Math.round((Date.now() - startedAt) / 1000)}s${urls.length ? `: ${urls.join(", ")}` : ""}`,
 			);
@@ -233,9 +238,9 @@ module.exports = NodeHelper.create({
 			this.notReady(res, this.calendarsError, "calendar");
 			return;
 		}
-		const calendar = this.calendars[slug];
+		const calendar = this.calendars.get(slug);
 		if (!calendar) {
-			const available = Object.keys(this.calendars).map((name) => `${name}.ics`).join(", ") || "none";
+			const available = [...this.calendars.keys()].map((name) => `${name}.ics`).join(", ") || "none";
 			res.status(404).type("text/plain").send(`Unknown calendar "${slug}". Available: ${available}`);
 			return;
 		}

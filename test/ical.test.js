@@ -47,6 +47,17 @@ test("builds anniversary events with labels and years", () => {
 	assert.doesNotMatch(ics, /20270504/);
 });
 
+test("escapes every kind of line break so names cannot add properties", () => {
+	const ics = buildBirthdayCalendar(
+		[contact("1", "Eve\rURL:http://x\nA\r\nB", { year: null, month: 1, day: 1 })],
+		new Date("2026-06-01T00:00:00Z"),
+	);
+	assert.match(ics, /SUMMARY:Eve\\nURL:http:\/\/x\\nA\\nB\r\n/);
+	assert.doesNotMatch(ics, /\r(?!\n)/);
+	const merged = mergeCalendarObjects([], "Home\rX-EVIL:1");
+	assert.match(merged, /X-WR-CALNAME:Home\\nX-EVIL:1\r\n/);
+});
+
 test("moves Feb 29 to Feb 28 in non-leap years", () => {
 	const ics = buildBirthdayCalendar(
 		[contact("1", "Leap", { year: 2000, month: 2, day: 29 })],
