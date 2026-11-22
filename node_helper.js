@@ -8,6 +8,7 @@
 const NodeHelper = require("node_helper");
 const { createDAVClient } = require("tsdav");
 const { parseVCard, filterByGroups } = require("./lib/contacts");
+const { tokenAllowed } = require("./lib/auth");
 const {
 	buildBirthdayCalendar,
 	buildAnniversaryCalendar,
@@ -43,9 +44,13 @@ module.exports = NodeHelper.create({
 		this.contactsError = null;
 		this.calendarsError = null;
 
-		// Feeds are plain text or iCalendar; stop browsers from guessing another type.
-		this.expressApp.use(`/${this.name}`, (_req, res, next) => {
+		this.expressApp.use(`/${this.name}`, (req, res, next) => {
+			// Feeds are plain text or iCalendar; stop browsers from guessing another type.
 			res.set("X-Content-Type-Options", "nosniff");
+			if (this.config && !tokenAllowed(this.config.feedToken, req)) {
+				res.status(401).type("text/plain").send("Missing or wrong feed token: add ?token=… to the URL");
+				return;
+			}
 			next();
 		});
 		this.expressApp.get([`/${this.name}/birthdays.ics`, `/${this.name}/birthdays`], (_req, res) =>

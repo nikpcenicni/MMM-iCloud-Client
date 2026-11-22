@@ -14,6 +14,7 @@ Module.register("MMM-iCloud-Client", {
 		updateInterval: 60 * 60 * 1000,
 		groups: [],
 		calendars: [],
+		feedToken: "",
 	},
 
 	start: function () {

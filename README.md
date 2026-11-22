@@ -38,6 +38,7 @@ Requires Node.js 18 or newer.
     appPassword: "xxxx-xxxx-xxxx-xxxx",
     groups: ["Family"],               // optional: only contacts in these groups
     calendars: ["Home", "Kids"],      // optional: private calendars to serve
+    feedToken: "a-long-random-string", // optional: require ?token=… on every feed
   },
 },
 ```
@@ -49,6 +50,7 @@ Requires Node.js 18 or newer.
 | `updateInterval` | `3600000` (1 hour)  | How often to re-sync, in milliseconds. Minimum 5 minutes. |
 | `groups`         | `[]`                | Names of iCloud contact groups. When set, the birthday and anniversary feeds only include contacts in at least one of these groups. Empty means all contacts. |
 | `calendars`      | `[]`                | Names of iCloud calendars to serve, as shown in the Calendar app. Empty means no calendars are fetched. |
+| `feedToken`      | `""`                | When set, every feed requires this token, as `?token=…` in the URL or an `Authorization: Bearer …` header. Requests without it get `401 Unauthorized`. Empty means no token is needed. |
 
 Group and calendar names are not case-sensitive. If a name doesn't match, the log lists the names that exist (see [Troubleshooting](#troubleshooting)).
 
@@ -77,9 +79,13 @@ Group and calendar names are not case-sensitive. If a name doesn't match, the lo
 },
 ```
 
-If MagicMirror runs on a different port, change `8080` to match. The app-specific password never appears in any feed or URL. The older `/MMM-iCloud-Client/birthdays` path still works.
+If MagicMirror runs on a different port, change `8080` to match. If you set `feedToken`, add it to each URL, for example `http://localhost:8080/MMM-iCloud-Client/birthdays.ics?token=a-long-random-string`. The app-specific password never appears in any feed or URL. The older `/MMM-iCloud-Client/birthdays` path still works.
 
-To open a feed from another device (a browser or calendar app on your network), MagicMirror must accept connections from it: set `address: "0.0.0.0"` and add the device to `ipWhitelist` (or set `ipWhitelist: []`) in `config.js`. With the defaults, only the mirror itself can load the URLs. Keep in mind that anyone who can reach the mirror can then read your private calendars.
+## Security
+
+- **Who can read the feeds.** With MagicMirror's default `address` and `ipWhitelist`, only the mirror itself can load the feeds. To open them from another device (a browser or calendar app on your network), set `address: "0.0.0.0"` and add the device to `ipWhitelist` (or set `ipWhitelist: []`) in `config.js`. Anyone who can then reach the mirror can read your birthdays, anniversaries and private calendars, so also set `feedToken` to a long random string (for example the output of `openssl rand -hex 24`).
+- **Your app-specific password reaches the browser.** MagicMirror sends each module's config, including `appPassword` and `feedToken`, to the mirror page. Any device that can load the mirror page can read them. Keep `ipWhitelist` tight, and use MagicMirror's secret handling if your version has it.
+- **Limited access.** An app-specific password can read your contacts, calendars and mail, but can't change your Apple ID. If it leaks, revoke it at [account.apple.com](https://account.apple.com) and create a new one.
 
 ## The feeds
 
@@ -110,8 +116,9 @@ Check the MagicMirror log (for example `pm2 logs MagicMirror`):
 - `contact group(s) not found in iCloud: … Available groups: …`: a name in `groups` doesn't match. Copy one of the listed names.
 - `calendar(s) not found in iCloud: … Available calendars: …`: a name in `calendars` doesn't match. Copy one of the listed names.
 - `Unknown calendar "…"` when opening a calendar URL: the URL doesn't match a synced calendar. The response lists the available ones.
+- `Missing or wrong feed token` (`401`): `feedToken` is set and the URL doesn't include it, or includes a different value. Add `?token=…` to the URL.
 - `Cannot GET /MMM-iCloud-Client/birthdays.ics`: the module's helper did not load. Run `npm install` in the module folder and restart MagicMirror.
-- `This device is not allowed to access your mirror`, or the connection is refused: you are opening the URL from another device. See the `address` and `ipWhitelist` note above.
+- `This device is not allowed to access your mirror`, or the connection is refused: you are opening the URL from another device. See [Security](#security).
 - `iCloud contact sync failed: Invalid credentials … 401` (or `calendar sync failed`): the Apple ID or app-specific password is wrong.
 - `username or appPassword is missing`: one of the options is missing from `config.js`.
 
